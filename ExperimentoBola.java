@@ -15,6 +15,8 @@ import java.util.Random;
 import javafx.scene.input.KeyCode;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.ArrayList;
+import javafx.scene.shape.Shape;
 
 
 
@@ -25,6 +27,12 @@ public class ExperimentoBola extends Application
     private int velocidadPlataforma;
     private static int RADIO = 20;
     private int tiempoEnSegundos;
+    private ArrayList<Rectangle> ladrillos;
+    
+    private static final int NUM_LADRILLOS_A_MOSTRAR = 4;
+    private static final int ANCHO_LADRILLO = 40;
+    private static final int ALTO_LADRILLO = 20;
+    private static final int ALTO_BARRA_SUPERIOR = 20;
 
     public static void main(String[] args){
         launch(args);
@@ -58,11 +66,53 @@ public class ExperimentoBola extends Application
         circulo.setCenterX(20 + aleatorio.nextInt(500 - 40));
         circulo.setCenterY(50);
         contenedor.getChildren().add(circulo);
-        
         Label tiempoPasado = new Label("0");
         contenedor.getChildren().add(tiempoPasado);
+        
+        Scene escena = new Scene(contenedor, 500, 500);        
+        
+        ladrillos = new ArrayList<>();
+        
+        int numeroLadrillosAnadidos = 0;
+        while (numeroLadrillosAnadidos < NUM_LADRILLOS_A_MOSTRAR) {
+            
+            boolean encontradoLadrilloValido = false;
+            while (!encontradoLadrilloValido) {
+                
+                //Elegimos un ladrillo aleatorio
+                int posXLadrillo = aleatorio.nextInt((int)escena.getWidth() - ANCHO_LADRILLO);
+                int posYLadrillo = aleatorio.nextInt((int)escena.getHeight()/2 - ALTO_LADRILLO + ALTO_BARRA_SUPERIOR);
+                Rectangle posibleLadrillo = new Rectangle();
+                posibleLadrillo.setHeight(ALTO_LADRILLO);
+                posibleLadrillo.setWidth(ANCHO_LADRILLO);
+                posibleLadrillo.setTranslateX(posXLadrillo);
+                posibleLadrillo.setTranslateY(posYLadrillo);
 
-        Scene escena = new Scene(contenedor, 500, 500);
+                //Comprobamos si el ladrillo es valido
+                boolean solapamientoDetectado = false;
+                int ladrilloActual = 0;
+                while (ladrilloActual < ladrillos.size() && !solapamientoDetectado) {
+                    Shape interseccion = Shape.intersect(posibleLadrillo, ladrillos.get(ladrilloActual));
+                    if (interseccion.getBoundsInParent().getWidth() != -1) {
+                        solapamientoDetectado = true;
+                    }                    
+                    ladrilloActual++;
+
+                }               
+                
+                // si hemos encontrado un ladrillo valido
+                if (!solapamientoDetectado) {
+                    encontradoLadrilloValido = true;
+                    ladrillos.add(posibleLadrillo);
+                    contenedor.getChildren().add(posibleLadrillo);
+                }
+
+            }  
+
+            numeroLadrillosAnadidos++;
+        }
+
+
         escenario.setScene(escena);
         escenario.show();
 
@@ -99,6 +149,18 @@ public class ExperimentoBola extends Application
                         plataforma.getBoundsInParent().getMaxX() == escena.getWidth()) {
                             velocidadPlataforma = 0;
                         }
+                        
+                        
+                        for (int i = 0; i < ladrillos.size(); i++) {
+                            Rectangle ladrilloAComprobar = ladrillos.get(i);
+                            Shape interseccion = Shape.intersect(circulo, ladrilloAComprobar);
+                            if (interseccion.getBoundsInParent().getWidth() != -1) {
+                                contenedor.getChildren().remove(ladrilloAComprobar);
+                                ladrillos.remove(ladrilloAComprobar);
+                                i--;
+                            }
+                        }
+                        
                         
                         // Actualizamos la etiqueta del tiempo
                         int minutos = tiempoEnSegundos / 60;
